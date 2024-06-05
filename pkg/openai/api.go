@@ -3,41 +3,61 @@ package openai
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
-	"os"
 	"path/filepath"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 const (
 	openaiTranscriptionsURL = "https://api.openai.com/v1/audio/transcriptions"
-	openaiTokenVar          = "OPENAI_TOKEN"
 	openaiModel             = "whisper-1"
+	responseFormat          = "json"
+	maxFileSize             = 25 * 1024 * 1024 // 25MB
 )
 
-func Transcribe(filePath string) (string, error) {
-	payload := &bytes.Buffer{}
-	writer := multipart.NewWriter(payload)
-	file, err := os.Open(filePath)
-	if err != nil {
+var SupportedFormats = map[string]bool{
+	".mp3":  true,
+	".mp4":  true,
+	".mpeg": true,
+	".mpga": true,
+	".m4a":  true,
+	".wav":  true,
+	".webm": true,
+}
+
+type apiResponse struct {
+	Text string `json:"text"`
+}
+
+type OpenAIClient struct {
+	Token string
+}
+
+func NewOpenAIClient(token string) *OpenAIClient {
+	return &OpenAIClient{Token: token}
+}
+
+func (c *OpenAIClient) Transcribe(filePath string, fileContent *bytes.Buffer) (string, error) {
+	if err := c.validateFile(filePath, fileContent); err != nil {
 		return "", err
 	}
 
-	defer file.Close()
-
+	payload := &bytes.Buffer{}
+	writer := multipart.NewWriter(payload)
 	part1, err := writer.CreateFormFile("file", filepath.Base(filePath))
 	if err != nil {
 		return "", err
 	}
 
-	_, err = io.Copy(part1, file)
+	_, err = io.Copy(part1, fileContent)
 	if err != nil {
 		return "", err
 	}
+
 	_ = writer.WriteField("model", openaiModel)
+	_ = writer.WriteField("response_format", responseFormat)
 	err = writer.Close()
 	if err != nil {
 		return "", err
@@ -45,14 +65,12 @@ func Transcribe(filePath string) (string, error) {
 
 	client := &http.Client{}
 	req, err := http.NewRequest(http.MethodPost, openaiTranscriptionsURL, payload)
-
 	if err != nil {
 		return "", err
 	}
-	req.Header.Add("Authorization", spew.Sprintf("Bearer %v", os.Getenv(openaiTokenVar)))
-	//req.Header.Add("Cookie", "__cf_bm=bVf7TDsPMy5gY4fAVWa8iK8li.MYWERnPFyrL8dOQd8-1694022164-0-ASazMZYHiGnE8ur9NNwmlUGHaAdeMu6Yt1uTlR2L9J1+fRyUk5nBNu6XcTWvKAibx/bkapeyeAo0mmqWRX8me/s=")
-
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %v", c.Token))
 	req.Header.Set("Content-Type", writer.FormDataContentType())
+
 	res, err := client.Do(req)
 	if err != nil {
 		return "", err
@@ -64,13 +82,28 @@ func Transcribe(filePath string) (string, error) {
 		return "", err
 	}
 
-	result := struct {
-		Text string `json:"text"`
-	}{}
+	if res.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("unexpected status code: %v\n%s", res.Status, body)
+	}
+
+	result := apiResponse{}
 	err = json.Unmarshal(body, &result)
 	if err != nil {
 		return "", err
 	}
 
 	return result.Text, nil
+}
+
+func (c *OpenAIClient) validateFile(filePath string, fileContent *bytes.Buffer) error {
+	if fileContent.Len() > maxFileSize {
+		return fmt.Errorf("file size exceeds the 25MB limit")
+	}
+
+	ext := filepath.Ext(filePath)
+	if !SupportedFormats[ext] {
+		return fmt.Errorf("unsupported file format: %v", ext)
+	}
+
+	return nil
 }

@@ -1,0 +1,14 @@
+services:
+  goai_transcriber_api:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile.api
+    container_name: goai_transcriber_api
+    environment:
+      - APP_OPENAI_TOKEN=${APP_OPENAI_TOKEN}
+      - APP_WORKING_PATH=/app/audios
+    volumes:
+      - ../audios:/app/audios
+    ports:
+      - "8080:8080"
+    entrypoint: ["sh", "-c", "mkdir -p /app/audios && ./main"]
