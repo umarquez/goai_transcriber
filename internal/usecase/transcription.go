@@ -6,10 +6,14 @@ import (
 	"github.com/umarquez/goai_transcriber/internal/repository"
 )
 
-type TranscriptionUsecase struct {
-	TranscriptionRepo repository.TranscriptionRepository
+type Transcription interface {
+	Transcribe(filePath string, fileContent *bytes.Buffer) (entity.Transcription, error)
 }
 
-func (u *TranscriptionUsecase) Transcribe(filePath string, fileContent *bytes.Buffer) (entity.Transcription, error) {
+type transcription struct {
+	TranscriptionRepo repository.Transcription
+}
+
+func (u *transcription) Transcribe(filePath string, fileContent *bytes.Buffer) (entity.Transcription, error) {
 	return u.TranscriptionRepo.Transcribe(filePath, fileContent)
 }

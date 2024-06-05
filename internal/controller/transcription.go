@@ -15,7 +15,7 @@ import (
 
 // TranscriptionController handles the transcriptions.
 type TranscriptionController struct {
-	TranscriptionUsecase *usecase.TranscriptionUsecase
+	TranscriptionUsecase usecase.Transcription
 }
 
 var log = logrus.New()
@@ -27,7 +27,7 @@ func init() {
 }
 
 // NewTranscriptionController creates a new TranscriptionController.
-func NewTranscriptionController(usecase *usecase.TranscriptionUsecase) *TranscriptionController {
+func NewTranscriptionController(usecase usecase.Transcription) *TranscriptionController {
 	return &TranscriptionController{TranscriptionUsecase: usecase}
 }
 
@@ -62,7 +62,7 @@ func (ctrl *TranscriptionController) Transcribe(c *gin.Context) {
 			ctrl.handleError(c, http.StatusInternalServerError, "failed to convert M4A to MP3")
 			return
 		}
-		defer os.Remove(mp3FilePath) // Clean up the temporary MP3 file after processing
+		defer os.Remove(mp3FilePath)
 
 		fileContent, err := os.Open(mp3FilePath)
 		if err != nil {

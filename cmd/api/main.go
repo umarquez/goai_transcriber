@@ -31,7 +31,7 @@ func main() {
 
 	openAIClient := openai.NewOpenAIClient(token)
 	transcriptionRepo := repository.NewTranscriptionRepository(openAIClient)
-	transcriptionUsecase := &usecase.TranscriptionUsecase{TranscriptionRepo: transcriptionRepo}
+	transcriptionUsecase := &usecase.Transcription{TranscriptionRepo: transcriptionRepo}
 	transcriptionController := controller.NewTranscriptionController(transcriptionUsecase)
 
 	app := api.NewApi(transcriptionController)
