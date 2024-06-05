@@ -1,14 +1,23 @@
 package main
 
 import (
-	"fmt"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/umarquez/goai_transcriber/internal/api"
 	"github.com/umarquez/goai_transcriber/internal/controller"
 	"github.com/umarquez/goai_transcriber/internal/repository"
 	"github.com/umarquez/goai_transcriber/internal/usecase"
 	"github.com/umarquez/goai_transcriber/pkg/openai"
+	"os"
 )
+
+var log = logrus.New()
+
+func init() {
+	log.SetFormatter(&logrus.JSONFormatter{})
+	log.SetOutput(os.Stdout)
+	log.SetLevel(logrus.InfoLevel)
+}
 
 func main() {
 	viper.AutomaticEnv()
@@ -16,7 +25,7 @@ func main() {
 
 	token := viper.GetString("OPENAI_TOKEN")
 	if token == "" {
-		fmt.Println("Error: APP_OPENAI_TOKEN environment variable is not set")
+		log.Fatal("Error: APP_OPENAI_TOKEN environment variable is not set")
 		return
 	}
 
@@ -28,6 +37,6 @@ func main() {
 	app := api.NewApi(transcriptionController)
 	err := app.Run()
 	if err != nil {
-		fmt.Println("Error: ", err)
+		log.Fatal("Error: ", err)
 	}
 }

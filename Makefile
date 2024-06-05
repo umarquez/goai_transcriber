@@ -49,7 +49,7 @@ restart: down up
 # Generate Swagger documentation
 .PHONY: swagger
 swagger:
-	swag init -g cmd/api -o ../../docs
+	cd cmd/api && swag init --parseDependency --parseInternal -g main.go -o ../../docs
 
 # Check environment variables
 $(ENV_FILE):

@@ -1,4 +1,44 @@
+definitions:
+  internal_controller.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  internal_controller.TranscriptionResponse:
+    properties:
+      transcription:
+        type: string
+    type: object
 info:
   contact: {}
-paths: {}
+paths:
+  /transcribe:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload an audio file and get the transcription
+      parameters:
+      - description: Audio file
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_controller.TranscriptionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_controller.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_controller.ErrorResponse'
+      summary: Transcribe an audio file
+      tags:
+      - transcriptions
 swagger: "2.0"
